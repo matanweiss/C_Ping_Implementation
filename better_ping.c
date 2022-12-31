@@ -16,10 +16,7 @@
 #include <fcntl.h>
 #define IP_ADDRESS "127.0.0.1"
 #define PORT 3000
-// IPv4 header len without options
 #define IP4_HDRLEN 20
-
-// ICMP header len for echo req
 #define ICMP_HDRLEN 8
 
 // Compute checksum (RFC 1071).
@@ -233,6 +230,7 @@ int main(int argc, char *argv[])
     //         return -1;
     //     }
     // }
+    printf("server %s cannot be reached\n", argv[1]);
     wait(&status); // waiting for child to finish before exiting
     printf("child exit status is: %d", status);
     close(sock);

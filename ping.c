@@ -147,7 +147,7 @@ int sendPing(int sock, int seq, char *destinationIP)
 
 int main(int argc, char *argv[])
 {
-    // Create raw socket for IP-RAW (make IP-header by yourself)
+    // Create raw socket for IP-RAW
     int sock = -1;
     if ((sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
     {

@@ -13,7 +13,6 @@
 #include <sys/time.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
-#include <fcntl.h>
 #define IP_ADDRESS "127.0.0.1"
 #define PORT 3000
 #define IP4_HDRLEN 20
@@ -93,22 +92,18 @@ int sendPing(int sock, int seq, char *destinationIP)
     memset(&dest_in, 0, sizeof(struct sockaddr_in));
     dest_in.sin_family = AF_INET;
 
-    // The port is irrelant for Networking and therefore was zeroed.
-    // dest_in.sin_addr.s_addr = iphdr.ip_dst.s_addr;
     dest_in.sin_addr.s_addr = inet_addr(destinationIP);
-    // inet_pton(AF_INET, DESTINATION_IP, &(dest_in.sin_addr.s_addr));
 
     struct timeval start, end;
     gettimeofday(&start, 0);
     sleep((seq + 1) * 3);
-    // Send the packet using sendto() for sending datagrams.
+
     int bytes_sent = sendto(sock, packet, ICMP_HDRLEN + datalen, 0, (struct sockaddr *)&dest_in, sizeof(dest_in));
     if (bytes_sent == -1)
     {
         fprintf(stderr, "sendto() failed with error: %d", errno);
         return -1;
     }
-    // printf("Successfuly sent one packet : ICMP HEADER : %d bytes, data length : %d , icmp header : %d \n", bytes_sent, datalen, ICMP_HDRLEN);
 
     // Get the ping response
     bzero(packet, IP_MAXPACKET);
@@ -136,27 +131,22 @@ int sendPing(int sock, int seq, char *destinationIP)
 
     char reply[IP_MAXPACKET];
     memcpy(reply, packet + ICMP_HDRLEN + IP4_HDRLEN, datalen);
-    // printf("ICMP reply: %s \n", reply);
 
     float milliseconds = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_usec - start.tv_usec) / 1000.0f;
     unsigned long microseconds = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_usec - start.tv_usec);
     printf("RTT: %f milliseconds (%ld microseconds)\n\n", milliseconds, microseconds);
-    // sleep(5);
 }
 
-// run 2 programs using fork + exec
-// command: make clean && make all && ./partb
 int main(int argc, char *argv[])
 {
     char *args[2];
-    // compiled watchdog.c by makefile
     args[0] = "./watchdog";
-    args[1] = NULL;
     if (argc != 2)
     {
         printf("usage: %s <addr> \n", argv[0]);
         exit(0);
     }
+    args[1] = argv[1];
     int status;
     int pid = fork();
     if (pid == 0)
@@ -202,15 +192,16 @@ int main(int argc, char *argv[])
         close(sock);
         return -1;
     }
-    fcntl(sock, F_SETFL, O_NONBLOCK);
+
+    // fcntl(sock, F_SETFL, O_NONBLOCK);
     int sent = 1;
     int stop = 0;
     while (1)
     {
-        if (recv(sock, &stop, sizeof(stop), 0) > 0)
-        {
-            break;
-        }
+        // if (recv(sock, &stop, sizeof(stop), 0) > 0)
+        // {
+        //     break;
+        // }
         if (send(sock, &sent, sizeof(sent), 0) == -1)
         {
             perror("send() failed");
@@ -218,19 +209,6 @@ int main(int argc, char *argv[])
         }
         sendPing(rawSocket, seq++, argv[1]);
     }
-    // char buffer[8];
-    // strcpy(buffer, "send");
-    // while (!strcmp(buffer, "send"))
-    // {
-    //     sendPing(rawSocket, seq++, argv[1]);
-    //     sleep(1);
-    //     if (recv(senderSocket, buffer, sizeof(buffer), 0) <= 0)
-    //     {
-    //         perror("recv() failed");
-    //         return -1;
-    //     }
-    // }
-    printf("server %s cannot be reached\n", argv[1]);
     wait(&status); // waiting for child to finish before exiting
     printf("child exit status is: %d", status);
     close(sock);

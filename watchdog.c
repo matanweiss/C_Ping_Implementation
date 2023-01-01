@@ -9,9 +9,11 @@
 #include <netinet/tcp.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <signal.h>
 #define PORT 3000
 
-int main()
+int main(int argc, char *argv[])
 {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1)
@@ -64,12 +66,6 @@ int main()
     }
     fcntl(sock, F_SETFL, O_NONBLOCK);
     fcntl(senderSocket, F_SETFL, O_NONBLOCK);
-    // while (timer < 10seconds)
-    // {
-    //     recv();
-    //     timer = 0seconds;
-    // }
-    // send("timeout")
     int sent = 1;
     struct timeval start, end;
     double timeDelta = 0.0;
@@ -83,11 +79,14 @@ int main()
         gettimeofday(&end, NULL);
         timeDelta = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
     }
-    if (send(senderSocket, &sent, sizeof(sent), 0) < 0)
-    {
-        perror("send() failed");
-        return -1;
-    }
+    // if (send(senderSocket, &sent, sizeof(sent), 0) < 0)
+    // {
+    //     perror("send() failed");
+    //     return -1;
+    // }
     close(sock);
+    close(senderSocket);
+    printf("server %s cannot be reached\n", argv[1]);
+    kill(getppid(), SIGKILL);
     return 0;
 }

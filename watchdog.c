@@ -79,11 +79,6 @@ int main(int argc, char *argv[])
         gettimeofday(&end, NULL);
         timeDelta = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
     }
-    // if (send(senderSocket, &sent, sizeof(sent), 0) < 0)
-    // {
-    //     perror("send() failed");
-    //     return -1;
-    // }
     close(sock);
     close(senderSocket);
     printf("server %s cannot be reached\n", argv[1]);

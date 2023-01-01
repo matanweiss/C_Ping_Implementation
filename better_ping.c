@@ -193,15 +193,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // fcntl(sock, F_SETFL, O_NONBLOCK);
     int sent = 1;
     int stop = 0;
     while (1)
     {
-        // if (recv(sock, &stop, sizeof(stop), 0) > 0)
-        // {
-        //     break;
-        // }
         if (send(sock, &sent, sizeof(sent), 0) == -1)
         {
             perror("send() failed");

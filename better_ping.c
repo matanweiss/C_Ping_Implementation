@@ -151,7 +151,6 @@ int main(int argc, char *argv[])
     int pid = fork();
     if (pid == 0)
     {
-        printf("in child \n");
         execvp(args[0], args);
     }
     int rawSocket = -1;
@@ -201,6 +200,7 @@ int main(int argc, char *argv[])
             perror("send() failed");
             return -1;
         }
+        printf("Sending packet number %d:\n", seq);
         sendPing(rawSocket, seq++, argv[1]);
     }
     wait(&status); // waiting for child to finish before exiting

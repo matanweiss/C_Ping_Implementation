@@ -194,7 +194,6 @@ int main(int argc, char *argv[])
     }
 
     int sent = 1;
-    int stop = 0;
     while (1)
     {
         if (send(sock, &sent, sizeof(sent), 0) == -1)

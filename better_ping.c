@@ -84,20 +84,22 @@ int sendPing(int sock, int seq, char *destinationIP)
     // After ICMP header, add the ICMP data.
     memcpy(packet + ICMP_HDRLEN, data, datalen);
 
-    // Calculate the ICMP header checksum
+    // Calculating the ICMP header checksum
     icmphdr.icmp_cksum = calculate_checksum((unsigned short *)(packet), ICMP_HDRLEN + datalen);
     memcpy((packet), &icmphdr, ICMP_HDRLEN);
 
     struct sockaddr_in dest_in;
     memset(&dest_in, 0, sizeof(struct sockaddr_in));
     dest_in.sin_family = AF_INET;
-
     dest_in.sin_addr.s_addr = inet_addr(destinationIP);
 
     struct timeval start, end;
     gettimeofday(&start, 0);
+
+    // adding delay for testing watchdog
     sleep((seq + 1) * 3);
 
+    // Sending the ICMP ECHO REQUEST packet
     int bytes_sent = sendto(sock, packet, ICMP_HDRLEN + datalen, 0, (struct sockaddr *)&dest_in, sizeof(dest_in));
     if (bytes_sent == -1)
     {
@@ -105,7 +107,7 @@ int sendPing(int sock, int seq, char *destinationIP)
         return -1;
     }
 
-    // Get the ping response
+    // Receiving the ICMP ECHO RESPONSE packet
     bzero(packet, IP_MAXPACKET);
     socklen_t len = sizeof(dest_in);
     ssize_t bytes_received = -1;
@@ -116,14 +118,10 @@ int sendPing(int sock, int seq, char *destinationIP)
             // Check the IP header
             struct iphdr *iphdr = (struct iphdr *)packet;
             struct icmphdr *icmphdr = (struct icmphdr *)(packet + (iphdr->ihl * 4));
-            // printf("%ld bytes from %s\n", bytes_received, inet_ntoa(dest_in.sin_addr));
-            // icmphdr->type
             char sourceIPAddrReadable[32] = {'\0'};
             inet_ntop(AF_INET, &iphdr->saddr, sourceIPAddrReadable, sizeof(sourceIPAddrReadable));
             printf("Packet IP: %s \n", sourceIPAddrReadable);
             printf("Sequence number: [%d]\n", icmphdr->un.echo.sequence);
-            // printf("Successfuly received one packet with %d bytes : data length : %d , icmp header : %d , ip header : %d \n", bytes_received, datalen, ICMP_HDRLEN, IP4_HDRLEN);
-
             break;
         }
     }
@@ -139,6 +137,7 @@ int sendPing(int sock, int seq, char *destinationIP)
 
 int main(int argc, char *argv[])
 {
+    // executing watchdog
     char *args[2];
     args[0] = "./watchdog";
     if (argc != 2)
@@ -149,10 +148,12 @@ int main(int argc, char *argv[])
     args[1] = argv[1];
     int status;
     int pid = fork();
-    if (pid == 0)
+    if (pid == 0) // child process will enter the block
     {
         execvp(args[0], args);
     }
+
+    // creating a raw socket
     int rawSocket = -1;
     if ((rawSocket = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1)
     {
@@ -163,7 +164,7 @@ int main(int argc, char *argv[])
 
     int seq = 0;
 
-    // creating the socket
+    // creating a socket
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1)
     {
@@ -182,8 +183,9 @@ int main(int argc, char *argv[])
         perror("inet_pton() failed");
         return -1;
     }
-    sleep(1);
-    // connect to receiver
+    sleep(1); // sleep so watchdog is able to execute accept() method
+
+    // connect to watchdog
     int connectResult = connect(sock, (struct sockaddr *)&Address, sizeof(Address));
     if (connectResult == -1)
     {
@@ -192,14 +194,18 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // sending packets until watchdog kills the process
     int sent = 1;
     while (1)
     {
+        // sending a message to watchdog to reset the timer
         if (send(sock, &sent, sizeof(sent), 0) == -1)
         {
             perror("send() failed");
             return -1;
         }
+
+        // sending and receiving the packet
         printf("Sending packet number %d:\n", seq);
         sendPing(rawSocket, seq++, argv[1]);
     }
